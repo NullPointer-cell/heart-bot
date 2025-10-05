@@ -40,8 +40,8 @@ async def on_ready():
     print(f"✅ Logged in as {bot.user} (ID: {bot.user.id})")
 
 @bot.event
-@bot.event
 async def on_reaction_add(reaction, user):
+    print(f"🪶 Reaction detected: {reaction.emoji} by {user} in {reaction.message.channel}")
     if user.bot:
         return
 
@@ -118,4 +118,5 @@ if __name__ == "__main__":
         asyncio.run(main())
     except KeyboardInterrupt:
         print("Shutting down...")
+
 
