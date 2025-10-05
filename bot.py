@@ -3,6 +3,21 @@ from discord.ext import commands
 import json
 import os
 from dotenv import load_dotenv
+from threading import Thread
+from flask import Flask
+
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "Bot is running ✅"
+
+def run_web():
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host="0.0.0.0", port=port)
+
+# Start web server in a separate thread
+Thread(target=run_web).start()
 
 # Load .env file
 load_dotenv()
@@ -81,4 +96,5 @@ load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
 
 bot.run(TOKEN)
+
 
