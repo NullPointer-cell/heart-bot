@@ -1,68 +1,81 @@
-# test_bot.py
-import os
-import asyncio
 import discord
 from discord.ext import commands
+import json
+import os
+from dotenv import load_dotenv
 
-# -------------------
-# Bot Token from environment
-# -------------------
-DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
-if not DISCORD_TOKEN:
-    raise RuntimeError("DISCORD_TOKEN not set")
+# Load .env file
+load_dotenv()
+TOKEN = os.getenv("DISCORD_TOKEN")
 
-# -------------------
-# Intents
-# -------------------
+# Setup intents
 intents = discord.Intents.default()
 intents.message_content = True
 intents.reactions = True
 intents.messages = True
 intents.guilds = True
+intents.members = True  # helps with mentions
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# -------------------
-# Debug event for reactions
-# -------------------
+# Load hearts data
+if os.path.exists("hearts.json"):
+    with open("hearts.json", "r") as f:
+        hearts = json.load(f)
+else:
+    hearts = {}
+
+def save_hearts():
+    """Save hearts to file"""
+    with open("hearts.json", "w") as f:
+        json.dump(hearts, f, indent=4)
+
 @bot.event
 async def on_ready():
-    print(f"✅ Logged in as {bot.user} (ID: {bot.user.id})")
+    print(f"✅ Logged in as {bot.user}")
 
 @bot.event
 async def on_reaction_add(reaction, user):
-    print(f"🪶 Reaction detected: {reaction.emoji} | type: {type(reaction.emoji)}")
-    print(f"By user: {user} in channel: {reaction.message.channel}")
+    # Ignore bot reactions
+    if user.bot:
+        return
 
-    # Test message in the same channel
-    await reaction.message.channel.send(
-        f"Reaction detected: {reaction.emoji} from {user.mention}"
-    )
+    # Only count heart emoji ❤️
+    if str(reaction.emoji) == "❤️":
+        message_author = str(reaction.message.author.id)
 
-# -------------------
-# Keep bot alive on Render
-# -------------------
-from aiohttp import web
+        # Increment heart count
+        if message_author not in hearts:
+            hearts[message_author] = 0
+        hearts[message_author] += 1
+        save_hearts()
 
-async def handle_root(request):
-    return web.Response(text="OK - bot running")
+        # Send message in same channel
+        await reaction.message.channel.send(
+            f"❤️ <@{message_author}> received a heart from {user.mention}! "
+            f"They now have **{hearts[message_author]} hearts**."
+        )
 
-async def start_web_server():
-    port = int(os.getenv("PORT", "8000"))
-    app = web.Application()
-    app.router.add_get("/", handle_root)
-    runner = web.AppRunner(app)
-    await runner.setup()
-    site = web.TCPSite(runner, "0.0.0.0", port)
-    await site.start()
-    print(f"🌐 Web server running on port {port}")
+@bot.command()
+async def hearts_of(ctx, member: discord.Member):
+    """Check how many hearts a user has"""
+    count = hearts.get(str(member.id), 0)
+    await ctx.send(f"❤️ {member.mention} has {count} hearts!")
 
-# -------------------
-# Entrypoint
-# -------------------
-async def main():
-    await start_web_server()
-    await bot.start(DISCORD_TOKEN)
+@bot.command()
+async def tophearts(ctx):
+    """Show leaderboard of top users"""
+    if not hearts:
+        await ctx.send("No hearts yet 💔")
+        return
 
-if __name__ == "__main__":
-    asyncio.run(main())
+    sorted_hearts = sorted(hearts.items(), key=lambda x: x[1], reverse=True)
+    top = sorted_hearts[:5]
+
+    msg = "🏆 **Top Hearts Leaderboard** 🏆\n"
+    for i, (user_id, count) in enumerate(top, start=1):
+        msg += f"{i}. <@{user_id}> — ❤️ {count}\n"
+
+    await ctx.send(msg)
+
+bot.run(TOKEN)
