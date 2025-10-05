@@ -40,20 +40,29 @@ async def on_ready():
     print(f"✅ Logged in as {bot.user} (ID: {bot.user.id})")
 
 @bot.event
+@bot.event
 async def on_reaction_add(reaction, user):
     if user.bot:
         return
 
     if str(reaction.emoji) == "❤️":
         message_author = str(reaction.message.author.id)
-        hearts.setdefault(message_author, 0)
+
+        # Increment count
+        if message_author not in hearts:
+            hearts[message_author] = 0
         hearts[message_author] += 1
         save_hearts()
 
-        await reaction.message.channel.send(
-            f"❤️ <@{message_author}> received a heart from {user.mention} "
-            f"and now has {hearts[message_author]} hearts."
-        )
+        # Send message in specific channel
+        HEART_LOG_CHANNEL_ID = 1424096327846854837  # your channel ID here
+        channel = bot.get_channel(HEART_LOG_CHANNEL_ID)
+        if channel:
+            await channel.send(
+                f"❤️ <@{message_author}> received a heart from {user.mention} "
+                f"and now has {hearts[message_author]} hearts."
+            )
+
 
 @bot.command()
 async def hearts_of(ctx, member: discord.Member):
@@ -109,3 +118,4 @@ if __name__ == "__main__":
         asyncio.run(main())
     except KeyboardInterrupt:
         print("Shutting down...")
+
