@@ -77,5 +77,8 @@ async def tophearts(ctx):
         msg += f"{i}. <@{user_id}> — ❤️ {count}\n"
 
     await ctx.send(msg)
+load_dotenv()
+TOKEN = os.getenv("DISCORD_TOKEN")
 
 bot.run(TOKEN)
+
