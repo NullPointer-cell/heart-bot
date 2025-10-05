@@ -7,14 +7,17 @@ from aiohttp import web
 import discord
 from discord.ext import commands
 
-# load env (works locally if you have a .env file; on Render, env vars are injected)
+# -------------------
+# Load environment variables
+# -------------------
 load_dotenv()
-
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 if not DISCORD_TOKEN:
     raise RuntimeError("DISCORD_TOKEN not set in environment")
 
-# Bot intents & setup
+# -------------------
+# Bot setup with intents
+# -------------------
 intents = discord.Intents.default()
 intents.message_content = True
 intents.reactions = True
@@ -23,7 +26,9 @@ intents.guilds = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# Hearts storage
+# -------------------
+# Heart tracking storage
+# -------------------
 HEARTS_FILE = "hearts.json"
 if os.path.exists(HEARTS_FILE):
     with open(HEARTS_FILE, "r") as f:
@@ -35,27 +40,41 @@ def save_hearts():
     with open(HEARTS_FILE, "w") as f:
         json.dump(hearts, f, indent=4)
 
+# -------------------
+# Heart log channel ID
+# -------------------
+HEART_LOG_CHANNEL_ID = 1424096327846854837  # replace with your channel ID
+
+# -------------------
+# Heart emoji list
+# -------------------
+HEART_EMOJIS = ["❤️", "💖", "💓", "💕", "💗"]
+
+# -------------------
+# Bot events
+# -------------------
 @bot.event
 async def on_ready():
     print(f"✅ Logged in as {bot.user} (ID: {bot.user.id})")
 
 @bot.event
 async def on_reaction_add(reaction, user):
-    print(f"🪶 Reaction detected: {reaction.emoji} by {user} in {reaction.message.channel}")
     if user.bot:
         return
 
-    if str(reaction.emoji) == "❤️":
-        message_author = str(reaction.message.author.id)
+    # Debug: show emoji detected
+    print(f"🪶 Reaction emoji: {reaction.emoji} | Type: {type(reaction.emoji)}")
 
-        # Increment count
-        if message_author not in hearts:
-            hearts[message_author] = 0
+    # Count heart emoji (Unicode or custom)
+    if (isinstance(reaction.emoji, str) and reaction.emoji in HEART_EMOJIS) or \
+       (isinstance(reaction.emoji, discord.Emoji) and "heart" in reaction.emoji.name.lower()):
+        
+        message_author = str(reaction.message.author.id)
+        hearts.setdefault(message_author, 0)
         hearts[message_author] += 1
         save_hearts()
 
-        # Send message in specific channel
-        HEART_LOG_CHANNEL_ID = 1424096327846854837  # your channel ID here
+        # Send message in log channel
         channel = bot.get_channel(HEART_LOG_CHANNEL_ID)
         if channel:
             await channel.send(
@@ -63,7 +82,9 @@ async def on_reaction_add(reaction, user):
                 f"and now has {hearts[message_author]} hearts."
             )
 
-
+# -------------------
+# Bot commands
+# -------------------
 @bot.command()
 async def hearts_of(ctx, member: discord.Member):
     count = hearts.get(str(member.id), 0)
@@ -83,19 +104,17 @@ async def tophearts(ctx):
 
     await ctx.send(msg)
 
-
-# ---------------------
-# Minimal aiohttp web server so Render sees an open port
-# ---------------------
+# -------------------
+# Minimal aiohttp web server for Render
+# -------------------
 async def handle_root(request):
     return web.Response(text="OK - bot is running")
 
 async def start_web_server():
-    # Render (and many PaaS) provide a PORT env var. Default to 8000 locally.
     port = int(os.getenv("PORT", "8000"))
     app = web.Application()
     app.router.add_get("/", handle_root)
-    app.router.add_get("/healthz", handle_root)  # simple health check
+    app.router.add_get("/healthz", handle_root)
 
     runner = web.AppRunner(app)
     await runner.setup()
@@ -103,14 +122,11 @@ async def start_web_server():
     await site.start()
     print(f"🌐 Web server started on port {port}")
 
-# ---------------------
-# Entrypoint: run webserver and bot in same event loop
-# ---------------------
+# -------------------
+# Entrypoint
+# -------------------
 async def main():
-    # start web server in background
     await start_web_server()
-
-    # start the bot (this call does not return until bot stops)
     await bot.start(DISCORD_TOKEN)
 
 if __name__ == "__main__":
@@ -118,5 +134,3 @@ if __name__ == "__main__":
         asyncio.run(main())
     except KeyboardInterrupt:
         print("Shutting down...")
-
-
