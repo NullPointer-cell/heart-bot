@@ -1,0 +1,22 @@
+            - name: Tartufo Scan
+  # You may pin to the exact commit or the version.
+  # uses: godaddy/tartufo-action@d95293febe8f40a6b8ee3ac0acebfc36c3b7e0d1
+  uses: godaddy/tartufo-action@4.1.0
+  with:
+    # Override Tartufo scan mode
+    mode: # optional, default is scan-local-repo
+    # Enable entropy checks
+    entropy: # optional, default is true
+    # Enable regex checks
+    regex: # optional, default is true
+    # Enable filename checks
+    scan-filenames: # optional, default is true
+    # The format in which the output is generated
+    output-format: # optional, default is text
+    # Modify entropy detection sensitivity. This is expressed as on a scale of 0 to 100
+    entropy-sensitivity: # optional
+    # Scan only the specified branch
+    branch: # optional
+    # Scan git submodules
+    include-submodule: # optional, default is false
+          
