@@ -10,7 +10,7 @@ app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return "Bot is running ✅"
+    return "Hey there! Bot is running ✅"
 
 def run_web():
     port = int(os.environ.get("PORT", 8080))
@@ -92,10 +92,5 @@ async def tophearts(ctx):
         msg += f"{i}. <@{user_id}> — ❤️ {count}\n"
 
     await ctx.send(msg)
-load_dotenv()
-TOKEN = os.getenv("DISCORD_TOKEN")
 
 bot.run(TOKEN)
-
-
-print("hello")
