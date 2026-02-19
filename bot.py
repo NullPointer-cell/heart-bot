@@ -3,9 +3,9 @@ from discord.ext import commands
 import json
 import os
 from dotenv import load_dotenv
+import re
 from threading import Thread
 from flask import Flask
-import re
 
 app = Flask(__name__)
 
@@ -17,9 +17,6 @@ def run_web():
     port = int(os.environ.get("PORT", 8080))
     app.run(host="0.0.0.0", port=port)
 
-# Start web server in a separate thread
-Thread(target=run_web).start()
-
 # Load .env file
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
@@ -28,9 +25,7 @@ TOKEN = os.getenv("DISCORD_TOKEN")
 intents = discord.Intents.default()
 intents.message_content = True
 intents.reactions = True
-intents.messages = True
-intents.guilds = True
-intents.members = True  # helps with mentions
+intents.members = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
@@ -100,4 +95,7 @@ async def count_expressions(ctx, message: str):
     expressions = re.findall(r'\b\w+\b', message)
     await ctx.send(f"The message contains {len(expressions)} expressions.")
 
-bot.run(TOKEN)
+if __name__ == "__main__":
+    # Start web server in a separate thread
+    Thread(target=run_web, daemon=True).start()
+    bot.run(TOKEN)
