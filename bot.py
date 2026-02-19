@@ -5,6 +5,7 @@ import os
 from dotenv import load_dotenv
 from threading import Thread
 from flask import Flask
+import re
 
 app = Flask(__name__)
 
@@ -92,5 +93,11 @@ async def tophearts(ctx):
         msg += f"{i}. <@{user_id}> — ❤️ {count}\n"
 
     await ctx.send(msg)
+
+@bot.command()
+async def count_expressions(ctx, message: str):
+    """Count the number of expressions in a message"""
+    expressions = re.findall(r'\b\w+\b', message)
+    await ctx.send(f"The message contains {len(expressions)} expressions.")
 
 bot.run(TOKEN)
